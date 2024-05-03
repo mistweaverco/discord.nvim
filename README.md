@@ -50,7 +50,7 @@ require("discord").setup({
     auto_connect        = false,                      -- Automatically connect to Discord RPC
     logo                = "auto",                     -- "auto" or url
     logo_tooltip        = nil,                        -- nil or string
-    main_image          = "logo",                     -- "language" or "logo"
+    main_image          = "language",                     -- "language" or "logo"
     client_id           = "1233867420330889286",      -- Use your own Discord application client id (not recommended)
     log_level           = nil,                        -- Log messages at or above this level (one of the following: "debug", "info", "warn", "error")
     debounce_timeout    = 10,                         -- Number of seconds to debounce events (or calls to `:lua package.loaded.presence:update(<filename>, true)`)

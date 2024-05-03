@@ -72,7 +72,7 @@ function M:setup(...)
   utils.set_option(self, "client_id", "1233867420330889286") -- Your discord application id
   utils.set_option(self, "logo", "auto") -- auto or url
   utils.set_option(self, "logo_tooltip", nil) -- nil or string
-  utils.set_option(self, "main_image", "logo") -- "language" or "logo"
+  utils.set_option(self, "main_image", "language") -- "language" or "logo"
   utils.set_option(self, "editing_text", "Editing %s")
   utils.set_option(self, "file_explorer_text", "Browsing %s")
   utils.set_option(self, "git_commit_text", "Committing changes")
