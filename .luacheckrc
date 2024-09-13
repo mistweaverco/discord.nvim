@@ -1,7 +1,20 @@
-globals = {
-    "vim",
+stds.nvim = {
+  read_globals = { "jit" },
 }
 
-exclude_files = {
-    "lua/discord/deps",
+std = "lua51+nvim"
+
+read_globals = {
+  "vim",
+}
+
+globals = {
+  "vim.g",
+  "vim.b",
+  "vim.w",
+  "vim.o",
+  "vim.bo",
+  "vim.wo",
+  "vim.go",
+  "vim.env",
 }

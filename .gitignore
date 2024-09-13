@@ -1,1 +1,4 @@
 .DS_Store
+
+# neovim session management - https://github.com/mistweaverco/kikao.nvim
+.nvim
