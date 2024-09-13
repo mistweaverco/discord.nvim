@@ -1,6 +1,29 @@
+<div align="center">
+
+![discord Logo](logo.svg)
+
 # discord.nvim
 
-A Discord <a href="https://discord.com/rich-presence">Rich Presence</a> plugin for  <a href="https://neovim.io">Neovim</a>
+![Lua](https://img.shields.io/badge/Made%20with%20Lua-blueviolet.svg?style=for-the-badge&logo=lua)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/mistweaverco/discord.nvim?style=for-the-badge)](https://github.com/mistweaverco/discord.nvim/releases/latest)
+
+[Requirements](#requirements) • [Install](#install) • [Usage](#usage)
+
+<p></p>
+
+An unobtrusive Discord <a href="https://discord.com/rich-presence">Rich Presence</a> plugin that just works.
+
+<p></p>
+
+</div>
+
+## Requirements
+
+> [!WARNING]
+> Requires [Neovim 0.10.1+](https://neovim.io) and [NodeJS 20](https://nodejs.org)
+
+NodeJS is required due to the usage of
+the [official SDK](https://discord.com/developers/docs/developer-tools/embedded-app-sdk)
 
 ## Features
 
@@ -31,13 +54,11 @@ use 'mistweaverco/discord.nvim'
 Plug 'mistweaverco/discord.nvim'
 ```
 
-#### Notes
-
-- Requires [Neovim 0.5](https://github.com/neovim/neovim/releases/tag/v0.5.0) or higher
-
 ## Configuration
 
-Configuration is not necessary for Rich Presence to work. But for those that want to override the default configs, the following options are available to configure in either Lua or VimL.
+Configuration is not necessary for Rich Presence to work.
+But for those that want to override the default configs,
+the following options are available to configure Lua.
 
 ### Lua
 
@@ -50,14 +71,14 @@ require("discord").setup({
     auto_connect        = false,                      -- Automatically connect to Discord RPC
     logo                = "auto",                     -- "auto" or url
     logo_tooltip        = nil,                        -- nil or string
-    main_image          = "language",                     -- "language" or "logo"
+    main_image          = "language",                 -- "language" or "logo"
     client_id           = "1233867420330889286",      -- Use your own Discord application client id (not recommended)
     log_level           = nil,                        -- Log messages at or above this level (one of the following: "debug", "info", "warn", "error")
     debounce_timeout    = 10,                         -- Number of seconds to debounce events (or calls to `:lua package.loaded.presence:update(<filename>, true)`)
     blacklist           = {},                         -- A list of strings or Lua patterns that disable Rich Presence if the current file name, path, or workspace matches
     file_assets         = {},                         -- Custom file asset definitions keyed by file names and extensions (see default config at `lua/presence/file_assets.lua` for reference)
     show_time           = true,                       -- Show the timer
-    global_timer        = true,                      -- if set false, timer will be reset on aucmds
+    global_timer        = true,                       -- if set false, timer will be reset on aucmds
 
     -- Rich Presence text options
     editing_text        = "Editing %s",               -- Format string rendered when an editable file is loaded in the buffer (either string or function(filename: string): string)
@@ -70,4 +91,3 @@ require("discord").setup({
     terminal_text       = "Using Terminal",           -- Format string rendered when in terminal mode.
 })
 ```
-
