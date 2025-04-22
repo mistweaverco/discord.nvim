@@ -15,15 +15,16 @@ An unobtrusive Discord <a href="https://discord.com/rich-presence">Rich Presence
 
 <p></p>
 
+![screenshot](assets/screenshot.png)
+
+<p></p>
+
 </div>
 
 ## Requirements
 
 > [!WARNING]
-> Requires [Neovim 0.10.1+](https://neovim.io) and [NodeJS 20](https://nodejs.org)
-
-NodeJS is required due to the usage of
-the [official SDK](https://discord.com/developers/docs/developer-tools/embedded-app-sdk)
+> Requires [Neovim 0.10.1+](https://neovim.io)
 
 ## Features
 
