@@ -8,6 +8,10 @@ M.levels = {
   { "error", "ErrorMsg" },
 }
 
+M.should_log = function(self, level)
+  return self.level and self.codes[level] >= self.codes[self.level]
+end
+
 function M:init(options)
   self.level = options.level
   return self

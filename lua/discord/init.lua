@@ -124,49 +124,49 @@ function M:setup(...)
     group = "discord",
     callback = function()
       M:handle_focus_gained()
-    end
+    end,
   })
   autocmd("TextChanged", {
     group = "discord",
     callback = function()
       M:handle_text_changed()
-    end
+    end,
   })
   autocmd("VimLeavePre", {
     group = "discord",
     callback = function()
       M:handle_vim_leave_pre()
-    end
+    end,
   })
   autocmd("WinEnter", {
     group = "discord",
     callback = function()
       M:handle_win_enter()
-    end
+    end,
   })
   autocmd("WinLeave", {
     group = "discord",
     callback = function()
       M:handle_win_leave()
-    end
+    end,
   })
   autocmd("BufEnter", {
     group = "discord",
     callback = function()
       M:handle_buf_enter()
-    end
+    end,
   })
   autocmd("BufAdd", {
     group = "discord",
     callback = function()
       M:handle_buf_add()
-    end
+    end,
   })
   autocmd("UIEnter", {
     group = "discord",
     callback = function()
       M:handle_ui_enter()
-    end
+    end,
   })
 
   -- Set logo
@@ -178,7 +178,6 @@ function M:setup(...)
 
   return self
 end
-
 
 function M:toggle()
   if M.is_connected then
@@ -214,6 +213,10 @@ function M:check_discord_socket(path)
 
   -- Asynchronously check socket path via stat
   vim.loop.fs_stat(path, function(err, stats)
+    if self.options.silence_discord_socket_errors ~= nil and not self.log:should_log("debug") then
+      self.log:debug(string.format("%s: %s", err_msg, err))
+      return
+    end
     if err then
       local err_msg = "Failed to get socket information"
       self.log:error(string.format("%s: %s", err_msg, err))
@@ -866,11 +869,11 @@ function M:update_for_buffer(buffer, should_debounce)
 
   -- Add button that links to the git workspace remote origin url
   if self.options.buttons ~= 0 then
-      local buttons = self:get_buttons(buffer, parent_dirpath)
-      if buttons then
-          self.log:debug(string.format("Attaching buttons to activity: %s", vim.inspect(buttons)))
-          activity.buttons = buttons
-      end
+    local buttons = self:get_buttons(buffer, parent_dirpath)
+    if buttons then
+      self.log:debug(string.format("Attaching buttons to activity: %s", vim.inspect(buttons)))
+      activity.buttons = buttons
+    end
   end
 
   -- Get the current line number and line count if the user has set the enable_line_number option
