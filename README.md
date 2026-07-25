@@ -15,7 +15,7 @@ An unobtrusive Discord <a href="https://discord.com/rich-presence">Rich Presence
 
 <p></p>
 
-![screenshot](assets/screenshot.png)
+<video muted loop autoplay src="https://github.com/user-attachments/assets/678a912d-6545-431e-83ee-dcfd3901e30b" />
 
 <p></p>
 
