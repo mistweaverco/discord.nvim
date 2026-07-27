@@ -39,8 +39,37 @@ function M.module_exists(module)
   return true
 end
 
+function M.get_file_protocol()
+  local file_path = vim.fn.expand("%:p")
+  if file_path == "" then
+    return nil
+  end
+  local protocol = string.match(file_path, "^(%a+):")
+  return protocol
+end
+
 function M.get_filetype()
   return vim.bo.filetype
+end
+
+---
+---@param type string
+---@param name string
+---@return boolean
+function M.has_asset(type, name)
+  local asset_name
+  if type == "icons" then
+    asset_name = string.format("assets/icons/%s.png", name)
+  elseif type == "logos" then
+    asset_name = string.format("assets/logos/%s.png", name)
+  else
+    return false
+  end
+  if vim.fn.filereadable(asset_name) == 1 then
+    return true
+  else
+    return false
+  end
 end
 
 function M.get_asset_url(asset_name)

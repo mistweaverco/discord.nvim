@@ -841,11 +841,14 @@ function M:update_for_buffer(buffer, should_debounce)
     distro_text = utils.get_nvim_distro()
   end
 
+  local file_protocol = utils.get_file_protocol()
+
   local icon
+
   if string.match(vim.bo.filetype, "git") or string.match(vim.bo.filetype, "fugitive") then
     icon = "git"
   else
-    icon = asset_key
+    icon = file_protocol ~= nil and utils.has_asset("icons", file_protocol) and file_protocol or asset_key
   end
 
   if self.options.logo_tooltip ~= nil then
