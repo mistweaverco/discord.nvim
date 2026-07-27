@@ -52,13 +52,29 @@ function M.get_filetype()
   return vim.bo.filetype
 end
 
+---Get the root directory of the plugin
+---@return string|nil
+M.get_plugin_path = function(p)
+  local source = debug.getinfo(1).source
+  local dir_path = source:match("@(.*/)") or source:match("@(.*\\)")
+  if not dir_path then
+    return
+  end
+  if p then
+    local path = vim.fs.normalize(vim.fs.joinpath(dir_path, "..", "..", p))
+    print("Plugin path: " .. path)
+    return path
+  end
+  return vim.fs.normalize(vim.fs.joinpath(dir_path, "..", ".."))
+end
+
 ---
 ---@param type string
 ---@param name string
 ---@return boolean
 function M.has_asset(type, name)
-  local asset_name = string.format("assets/%s/%s.png", type, name)
-  if vim.fn.filereadable(asset_name) == 1 then
+  local asset_name = string.format(vim.fs.joinpath("assets", "%s", "%s.png"), type, name)
+  if vim.fn.filereadable(M.get_plugin_path(asset_name)) == 1 then
     return true
   else
     return false
