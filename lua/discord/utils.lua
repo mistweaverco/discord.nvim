@@ -61,9 +61,7 @@ M.get_plugin_path = function(p)
     return
   end
   if p then
-    local path = vim.fs.normalize(vim.fs.joinpath(dir_path, "..", "..", p))
-    print("Plugin path: " .. path)
-    return path
+    return vim.fs.normalize(vim.fs.joinpath(dir_path, "..", "..", p))
   end
   return vim.fs.normalize(vim.fs.joinpath(dir_path, "..", ".."))
 end
