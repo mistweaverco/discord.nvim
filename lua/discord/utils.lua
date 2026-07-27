@@ -57,14 +57,7 @@ end
 ---@param name string
 ---@return boolean
 function M.has_asset(type, name)
-  local asset_name
-  if type == "icons" then
-    asset_name = string.format("assets/icons/%s.png", name)
-  elseif type == "logos" then
-    asset_name = string.format("assets/logos/%s.png", name)
-  else
-    return false
-  end
+  local asset_name = string.format("assets/%s/%s.png", type, name)
   if vim.fn.filereadable(asset_name) == 1 then
     return true
   else
@@ -72,17 +65,15 @@ function M.has_asset(type, name)
   end
 end
 
-function M.get_asset_url(asset_name)
+---Get the URL for an asset hosted on GitHub
+---@param type "icons"|"logos"|"plugins"
+---@param asset_name string
+---@return string
+function M.get_asset_url(type, asset_name)
   return string.format(
-    "https://raw.githubusercontent.com/mistweaverco/discord.nvim/main/assets/icons/%s.png?v=" .. version,
+    "https://raw.githubusercontent.com/mistweaverco/discord.nvim/main/assets/%s/%s.png?v=" .. version,
+    type,
     asset_name
-  )
-end
-
-function M.get_logo_url(logo_name)
-  return string.format(
-    "https://raw.githubusercontent.com/mistweaverco/discord.nvim/main/assets/logos/%s.png?v=" .. version,
-    logo_name
   )
 end
 

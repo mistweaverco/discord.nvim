@@ -75,6 +75,7 @@ function M:setup(...)
   utils.set_option(self, "main_image", "language") -- "language" or "logo"
   utils.set_option(self, "editing_text", "Editing %s")
   utils.set_option(self, "file_explorer_text", "Browsing %s")
+  utils.set_option(self, "plugins_text", "Using %s")
   utils.set_option(self, "git_commit_text", "Committing changes")
   utils.set_option(self, "plugin_manager_text", "Managing plugins")
   utils.set_option(self, "dashboard_text", "Viewing %s Dashboard")
@@ -497,8 +498,13 @@ function M:get_status_text(filename)
     return self:format_status_text("git_commit", filename)
   end
 
-  if filename then
+  local protocol = utils.get_file_protocol()
+  local has_plugin_asset_by_protocol = protocol ~= nil and utils.has_asset("plugins", protocol) == true
+
+  if filename and not has_plugin_asset_by_protocol then
     return self:format_status_text("editing", filename)
+  elseif has_plugin_asset_by_protocol then
+    return self:format_status_text("plugins", protocol)
   end
 end
 
@@ -829,7 +835,7 @@ function M:update_for_buffer(buffer, should_debounce)
   local file_text = description or name
   local logo
   if self.options.logo == "auto" then
-    logo = utils.get_logo_url(utils.get_nvim_distro())
+    logo = utils.get_asset_url("logos", utils.get_nvim_distro())
   else
     logo = self.options.logo
   end
@@ -843,12 +849,20 @@ function M:update_for_buffer(buffer, should_debounce)
 
   local file_protocol = utils.get_file_protocol()
 
-  local icon
+  local icon_name
+  local icon_path = "icons"
 
   if string.match(vim.bo.filetype, "git") or string.match(vim.bo.filetype, "fugitive") then
-    icon = "git"
+    icon_name = "git"
   else
-    icon = file_protocol ~= nil and utils.has_asset("icons", file_protocol) and file_protocol or asset_key
+    if file_protocol ~= nil then
+      if utils.has_asset("plugins", file_protocol) then
+        icon_path = "plugins"
+        icon_name = file_protocol
+      end
+    else
+      icon_name = asset_key
+    end
   end
 
   if self.options.logo_tooltip ~= nil then
@@ -856,9 +870,9 @@ function M:update_for_buffer(buffer, should_debounce)
   end
   local use_language_as_main_image = self.options.main_image == "language"
   local assets = {
-    large_image = use_language_as_main_image and utils.get_asset_url(icon) or logo,
+    large_image = use_language_as_main_image and utils.get_asset_url(icon_path, icon_name) or logo,
     large_text = use_language_as_main_image and file_text or distro_text,
-    small_image = use_language_as_main_image and logo or utils.get_asset_url(icon),
+    small_image = use_language_as_main_image and logo or utils.get_asset_url(icon_path, icon_name),
     small_text = use_language_as_main_image and distro_text or file_text,
   }
 
