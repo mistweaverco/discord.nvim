@@ -1,3 +1,5 @@
+local version = require("discord.version").version
+
 local M = {}
 
 function M.get_nvim_distro()
@@ -43,14 +45,14 @@ end
 
 function M.get_asset_url(asset_name)
   return string.format(
-    "https://raw.githubusercontent.com/mistweaverco/discord.nvim/main/assets/icons/%s.png",
+    "https://raw.githubusercontent.com/mistweaverco/discord.nvim/main/assets/icons/%s.png?v=" .. version,
     asset_name
   )
 end
 
 function M.get_logo_url(logo_name)
   return string.format(
-    "https://raw.githubusercontent.com/mistweaverco/discord.nvim/main/assets/logos/%s.png",
+    "https://raw.githubusercontent.com/mistweaverco/discord.nvim/main/assets/logos/%s.png?v=" .. version,
     logo_name
   )
 end
