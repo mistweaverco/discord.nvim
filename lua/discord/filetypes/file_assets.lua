@@ -73,7 +73,7 @@ return {
   md = { "Markdown", "markdown" },
   mdx = { "MDX", "markdownx" },
   moji = { "Mojo", "mojo" },
-  mjs = { "JavaScript", "javascript" },
+  mjs = { "JavaScript", "js" },
   ml = { "OCaml", "ocaml" },
   nim = { "Nim", "nim" },
   nix = { "Nix", "nix" },

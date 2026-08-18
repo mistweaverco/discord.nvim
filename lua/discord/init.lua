@@ -86,6 +86,21 @@ function M:setup(...)
   utils.set_option(self, "line_number_text", "Line %s out of %s")
   utils.set_option(self, "show_time", true)
   utils.set_option(self, "global_timer", true)
+  utils.set_option(self, "debounce_timeout", 10)
+  utils.set_option(self, "jujutsu_text", {
+    status = "Viewing jujutsu status",
+    status_file = "Reviewing %s",
+    diff = "Viewing a jujutsu diff",
+    diff_file = "Diffing %s",
+    annotate = "Using jujutsu",
+    annotate_file = "Annotating %s",
+    log = "Browsing jujutsu log",
+    describe = "Describing a change",
+    popup = "Using jujutsu",
+    file_history = "Viewing file history",
+    file_history_file = "Reviewing %s",
+    default = "Using jujutsu",
+  })
   utils.set_option(self, "file_assets", {})
   for name, asset in pairs(default_file_assets) do
     if not self.options.file_assets[name] then
@@ -161,6 +176,12 @@ function M:setup(...)
     group = "discord",
     callback = function()
       M:handle_buf_add()
+    end,
+  })
+  autocmd("CursorMoved", {
+    group = "discord",
+    callback = function()
+      M:handle_cursor_moved()
     end,
   })
   autocmd("UIEnter", {
@@ -466,6 +487,81 @@ function M:format_status_text(status_type, ...)
   end
 end
 
+local default_jujutsu_text = {
+  status = "Viewing jujutsu status",
+  status_file = "Reviewing %s",
+  diff = "Viewing a jujutsu diff",
+  diff_file = "Diffing %s",
+  annotate = "Using jujutsu",
+  annotate_file = "Annotating %s",
+  log = "Browsing jujutsu log",
+  describe = "Describing a change",
+  popup = "Using jujutsu",
+  file_history = "Viewing file history",
+  file_history_file = "Reviewing %s",
+  default = "Using jujutsu",
+}
+
+---Query jujutsu.nvim for the current UI context, if available
+---@param bufnr? integer
+---@return table|nil
+function M.get_jujutsu_presence(bufnr)
+  local ok, jj = pcall(require, "jujutsu")
+  if not ok or type(jj.get_presence) ~= "function" then
+    return nil
+  end
+  local ok_presence, presence = pcall(jj.get_presence, bufnr)
+  if ok_presence then
+    return presence
+  end
+  return nil
+end
+
+---@param presence table
+---@return string|nil
+local function jujutsu_presence_key(presence)
+  if not presence then
+    return nil
+  end
+  return table.concat({
+    presence.kind or "",
+    presence.path or "",
+    presence.revision or "",
+  }, "\0")
+end
+
+---Format Discord state text from a jujutsu.nvim presence table
+---@param presence table
+---@return string
+function M:format_jujutsu_status(presence)
+  local texts = self.options.jujutsu_text
+  if type(texts) == "function" then
+    return texts(presence)
+  end
+  if type(texts) ~= "table" then
+    texts = {}
+  end
+
+  local path = presence.path
+  local display = path and (path:match("([^/\\]+)$") or path) or presence.label or presence.kind
+  if path and path ~= "" then
+    local file_key = presence.kind .. "_file"
+    local fmt = texts[file_key] or default_jujutsu_text[file_key]
+    if fmt then
+      return string.format(fmt, display)
+    end
+  end
+
+  local fmt = texts[presence.kind]
+    or default_jujutsu_text[presence.kind]
+    or texts.default
+    or default_jujutsu_text.default
+  if fmt:find("%%s", 1, false) then
+    return string.format(fmt, display)
+  end
+  return fmt
+end
+
 -- Get the status text for the current buffer
 function M:get_status_text(filename)
   local file_explorer = file_explorers[vim.bo.filetype:match("[^%d]+")]
@@ -480,6 +576,15 @@ function M:get_status_text(filename)
     return self:format_status_text("plugin_manager", plugin_manager)
   elseif dashboard then
     return self:format_status_text("dashboard", dashboard)
+  end
+
+  local protocol = utils.get_file_protocol()
+  if protocol == "jujutsu" then
+    local presence = M.get_jujutsu_presence()
+    if presence then
+      return self:format_jujutsu_status(presence)
+    end
+    return self:format_status_text("plugins", "jujutsu")
   end
 
   if not filename or filename == "" then
@@ -498,13 +603,12 @@ function M:get_status_text(filename)
     return self:format_status_text("git_commit", filename)
   end
 
-  local protocol = utils.get_file_protocol()
-  local has_plugin_asset_by_protocol = protocol ~= nil and utils.has_asset("plugins", protocol) == true
+  local plugin_asset = utils.get_plugin_asset(utils.get_file_protocol())
 
-  if filename and not has_plugin_asset_by_protocol then
+  if filename and not plugin_asset then
     return self:format_status_text("editing", filename)
-  elseif has_plugin_asset_by_protocol then
-    return self:format_status_text("plugins", protocol)
+  elseif plugin_asset then
+    return self:format_status_text("plugins", plugin_asset)
   end
 end
 
@@ -780,17 +884,37 @@ end
 
 -- Update Rich discord for the provided vim buffer
 function M:update_for_buffer(buffer, should_debounce)
+  local jj_presence
+  if utils.get_file_protocol() == "jujutsu" then
+    jj_presence = M.get_jujutsu_presence()
+  end
+  local jj_key = jujutsu_presence_key(jj_presence)
+
   -- Avoid unnecessary updates if the previous activity was for the current buffer
-  -- (allow same-buffer updates when line numbers are enabled)
-  if self.options.enable_line_number == 0 and self.last_activity.file == buffer then
-    self.log:debug(string.format("Activity already set for %s, skipping...", buffer))
-    return
+  -- (allow same-buffer updates when line numbers are enabled, or jujutsu context changed)
+  if self.last_activity.file == buffer then
+    if jj_key then
+      if self.last_activity.presence_key == jj_key then
+        self.log:debug(string.format("Activity already set for %s, skipping...", buffer))
+        return
+      end
+    elseif self.options.enable_line_number == 0 then
+      self.log:debug(string.format("Activity already set for %s, skipping...", buffer))
+      return
+    end
   end
 
   -- Parse vim buffer
   local filename = self.get_filename(buffer, self.os.path_separator)
   local parent_dirpath = self.get_dir_path(buffer, self.os.path_separator)
   local extension = filename and self.get_file_extension(filename) or nil
+  if jj_presence and jj_presence.path and jj_presence.path ~= "" then
+    filename = self.get_filename(jj_presence.path, "/") or jj_presence.path
+    extension = filename and self.get_file_extension(filename) or nil
+  end
+  if jj_presence and jj_presence.root then
+    parent_dirpath = jj_presence.root
+  end
   self.log:debug(string.format("Parsed filename %s with %s extension", filename, extension or "no"))
 
   -- Return early if there is no valid activity status text to set
@@ -802,6 +926,10 @@ function M:update_for_buffer(buffer, should_debounce)
   -- Get project information
   self.log:debug(string.format("Getting project name for %s...", parent_dirpath))
   local project_name, project_path = self:get_project_name(parent_dirpath)
+  if not project_name and jj_presence and jj_presence.root then
+    project_name = self.get_filename(jj_presence.root, self.os.path_separator) or jj_presence.root
+    project_path = jj_presence.root
+  end
 
   -- Check for blacklist
   local is_blacklisted = #self.options.blacklist > 0 and self:check_blacklist(buffer, parent_dirpath, project_path)
@@ -848,21 +976,18 @@ function M:update_for_buffer(buffer, should_debounce)
   end
 
   local file_protocol = utils.get_file_protocol()
+  local plugin_asset = utils.get_plugin_asset(file_protocol)
+  local jj_file = jj_presence and jj_presence.path and jj_presence.path ~= ""
 
-  local icon_name
-  local icon_path = "icons"
-
-  if string.match(vim.bo.filetype, "git") or string.match(vim.bo.filetype, "fugitive") then
-    icon_name = "git"
+  local icon_path, icon_name
+  if jj_file then
+    icon_path, icon_name = utils.resolve_asset("icons", asset_key)
+  elseif not jj_presence and (string.match(vim.bo.filetype, "git") or string.match(vim.bo.filetype, "fugitive")) then
+    icon_path, icon_name = utils.resolve_asset("icons", "git")
+  elseif plugin_asset then
+    icon_path, icon_name = utils.resolve_asset("plugins", plugin_asset)
   else
-    if file_protocol ~= nil then
-      if utils.has_asset("plugins", file_protocol) then
-        icon_path = "plugins"
-        icon_name = file_protocol
-      end
-    else
-      icon_name = asset_key
-    end
+    icon_path, icon_name = utils.resolve_asset("icons", asset_key)
   end
 
   if self.options.logo_tooltip ~= nil then
@@ -910,6 +1035,7 @@ function M:update_for_buffer(buffer, should_debounce)
       set_at = activity_set_at,
       relative_set_at = relative_activity_set_at,
       workspace = nil,
+      presence_key = jj_key,
     }
   else
     -- Include project details if available and if the user hasn't set the enable_line_number option
@@ -925,6 +1051,7 @@ function M:update_for_buffer(buffer, should_debounce)
         set_at = activity_set_at,
         relative_set_at = relative_activity_set_at,
         workspace = project_path,
+        presence_key = jj_key,
       }
 
       if self.workspaces[project_path] then
@@ -950,6 +1077,7 @@ function M:update_for_buffer(buffer, should_debounce)
         set_at = activity_set_at,
         relative_set_at = relative_activity_set_at,
         workspace = nil,
+        presence_key = jj_key,
       }
 
       -- When no project is detected, set custom workspace text if:
@@ -1304,6 +1432,16 @@ function M:handle_buf_add()
 
     self:update()
   end)
+end
+
+-- CursorMoved events debounce discord updates for jujutsu UI buffers
+function M:handle_cursor_moved()
+  if not tostring(vim.bo.filetype):match("^jujutsu") then
+    return
+  end
+
+  self.log:debug("Handling CursorMoved event for jujutsu buffer...")
+  self:update(nil, true)
 end
 
 return M
